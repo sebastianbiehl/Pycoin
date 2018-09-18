@@ -1,4 +1,6 @@
-import functools
+from functools import reduce
+from hashlib import sha256
+import json
 
 # Initializing the blockchain
 
@@ -16,7 +18,7 @@ participants = set({owner})
 
 
 def hash_block(block):
-    return '-'.join([str(block[key]) for key in block])
+    return sha256(json.dumps(block).encode()).hexdigest()
 
 
 def get_balance(participant):
@@ -25,11 +27,11 @@ def get_balance(participant):
     open_tx_sender = [tx['amount']
                       for tx in open_transactions if tx['sender'] == participant]
     tx_sender.append(open_tx_sender)
-    amount_sent = functools.reduce(
+    amount_sent = reduce(
         lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum, tx_sender, 0)
     tx_recipient = [[tx['amount'] for tx in block['transactions'] if tx['recipient'] == participant]
                     for block in blockchain]
-    amount_received = functools.reduce(
+    amount_received = reduce(
         lambda tx_sum, tx_amt: tx_sum + tx_amt[0] if len(tx_amt) > 0 else tx_sum, tx_recipient, 0)
     return amount_received - amount_sent
 
