@@ -1,7 +1,8 @@
 from functools import reduce
 from hashlib import sha256
-import json
 from collections import OrderedDict
+
+from hash_util import hash_str_256, hash_block
 
 # Initializing the blockchain
 
@@ -20,13 +21,9 @@ owner = 'Sebastian'
 participants = set({owner})
 
 
-def hash_block(block):
-    return sha256(json.dumps(block, sort_keys=True).encode()).hexdigest()
-
-
 def valid_nonce(transactions, last_hash, nonce):
     guess = (str(transactions) + str(last_hash) + str(nonce)).encode()
-    guess_hash = sha256(guess).hexdigest()
+    guess_hash = hash_str_256(guess)
     print(guess_hash)
     return guess_hash[0:DIFFICULTY] == '0' * DIFFICULTY
 
