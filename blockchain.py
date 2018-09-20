@@ -8,60 +8,63 @@ from hash_util import hash_str_256, hash_block
 # Initializing the blockchain
 
 MINING_REWARD = 10
-DIFFICULTY = 3
+DIFFICULTY = 4
 
-genesis_block = {
-    'previous_hash': '',
-    'block_depth': 0,
-    'transactions': [],
-    'nonce': 100
-}
-blockchain = [genesis_block]
-open_transactions = []
 owner = 'Sebastian'
 participants = set({owner})
 
 
 def load_data():
     global blockchain, open_transactions
-    with open('blockchain.json', mode='r') as f:
-        file_content = f.readlines()
-        blockchain = json.loads(file_content[0][:-1])
-        updated_blockchain = []
-        for block in blockchain:
-            updated_block = {
-                'previous_hash': block['previous_hash'],
-                'block_depth': block['block_depth'],
-                'nonce': block['nonce'],
-                'transactions': [OrderedDict(
-                    [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])]) for tx in block['transactions']]
-            }
-            updated_blockchain.append(updated_block)
-        blockchain = updated_blockchain
-        open_transactions = json.loads(file_content[1])
-        updated_transactions = []
-        for tx in open_transactions:
-            updated_transaction = OrderedDict(
-                [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])])
-            updated_transactions.append(updated_transaction)
-        open_transactions = updated_transactions
-    print(open_transactions)
+    try:
+        with open('blockchain.json', mode='r') as f:
+            file_content = f.readlines()
+            blockchain = json.loads(file_content[0][:-1])
+            updated_blockchain = []
+            for block in blockchain:
+                updated_block = {
+                    'previous_hash': block['previous_hash'],
+                    'block_depth': block['block_depth'],
+                    'nonce': block['nonce'],
+                    'transactions': [OrderedDict(
+                        [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])]) for tx in block['transactions']]
+                }
+                updated_blockchain.append(updated_block)
+            blockchain = updated_blockchain
+            open_transactions = json.loads(file_content[1])
+            updated_transactions = []
+            for tx in open_transactions:
+                updated_transaction = OrderedDict(
+                    [('sender', tx['sender']), ('recipient', tx['recipient']), ('amount', tx['amount'])])
+                updated_transactions.append(updated_transaction)
+            open_transactions = updated_transactions
+    except (IOError, IndexError):
+        genesis_block = {
+            'previous_hash': '',
+            'block_depth': 0,
+            'transactions': [],
+            'nonce': 100
+        }
+        blockchain = [genesis_block]
+        open_transactions = []
 
 
 load_data()
 
 
 def save_data():
-    with open('blockchain.json', mode='w') as f:
-        f.write(json.dumps(blockchain))
-        f.write('\n')
-        f.write(json.dumps(open_transactions))
+    try:
+        with open('blockchain.json', mode='w') as f:
+            f.write(json.dumps(blockchain))
+            f.write('\n')
+            f.write(json.dumps(open_transactions))
+    except IOError:
+        print('Saving failed!')
 
 
 def valid_nonce(transactions, last_hash, nonce):
     guess = (str(transactions) + str(last_hash) + str(nonce)).encode()
     guess_hash = hash_str_256(guess)
-    print(guess_hash)
     return guess_hash[0:DIFFICULTY] == '0' * DIFFICULTY
 
 
@@ -80,7 +83,6 @@ def get_balance(participant):
     open_tx_sender = [tx['amount']
                       for tx in open_transactions if tx['sender'] == participant]
     tx_sender.append(open_tx_sender)
-    print(tx_sender)
     amount_sent = reduce(
         lambda tx_sum, tx_amt: tx_sum + sum(tx_amt) if len(tx_amt) > 0 else tx_sum, tx_sender, 0)
     tx_recipient = [[tx['amount'] for tx in block['transactions'] if tx['recipient'] == participant]
